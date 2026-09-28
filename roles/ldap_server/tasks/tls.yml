@@ -1,0 +1,145 @@
+---
+# ============================================================
+# LDAP TLS / LDAPS configuration
+# ============================================================
+
+- name: Create LDAP TLS directory
+  ansible.builtin.file:
+    path: "{{ ldap_tls_dir }}"
+    state: directory
+    owner: root
+    group: openldap
+    mode: "0750"
+
+
+# ============================================================
+# Root CA
+# ============================================================
+
+- name: Generate LDAP lab Root CA private key
+  community.crypto.openssl_privatekey:
+    path: "{{ ldap_tls_ca_key }}"
+    type: RSA
+    size: 4096
+    owner: root
+    group: openldap
+    mode: "0640"
+
+- name: Generate LDAP lab Root CA CSR
+  community.crypto.openssl_csr:
+    path: "{{ ldap_tls_dir }}/ca.csr"
+    privatekey_path: "{{ ldap_tls_ca_key }}"
+    common_name: "LDAP Lab Root CA"
+    basic_constraints:
+      - "CA:TRUE"
+    basic_constraints_critical: true
+    key_usage:
+      - keyCertSign
+      - cRLSign
+    key_usage_critical: true
+
+- name: Generate LDAP lab Root CA certificate
+  community.crypto.x509_certificate:
+    path: "{{ ldap_tls_ca_cert }}"
+    csr_path: "{{ ldap_tls_dir }}/ca.csr"
+    privatekey_path: "{{ ldap_tls_ca_key }}"
+    provider: selfsigned
+    selfsigned_not_after: "+3650d"
+
+
+# ============================================================
+# LDAP Server Certificate
+# ============================================================
+
+- name: Generate LDAP server private key
+  community.crypto.openssl_privatekey:
+    path: "{{ ldap_tls_server_key }}"
+    type: RSA
+    size: 2048
+    owner: root
+    group: openldap
+    mode: "0640"
+
+- name: Generate LDAP server certificate signing request
+  community.crypto.openssl_csr:
+    path: "{{ ldap_tls_server_csr }}"
+    privatekey_path: "{{ ldap_tls_server_key }}"
+    common_name: "{{ ldap_tls_common_name }}"
+    subject_alt_name: "{{ ldap_tls_subject_alt_names }}"
+    basic_constraints:
+      - "CA:FALSE"
+    basic_constraints_critical: true
+    key_usage:
+      - digitalSignature
+      - keyEncipherment
+    key_usage_critical: true
+    extended_key_usage:
+      - serverAuth
+
+- name: Generate LDAP server certificate signed by lab Root CA
+  community.crypto.x509_certificate:
+    path: "{{ ldap_tls_server_cert }}"
+    csr_path: "{{ ldap_tls_server_csr }}"
+    ownca_path: "{{ ldap_tls_ca_cert }}"
+    ownca_privatekey_path: "{{ ldap_tls_ca_key }}"
+    provider: ownca
+    ownca_not_after: "+825d"
+
+
+# ============================================================
+# Configure OpenLDAP TLS
+# ============================================================
+
+- name: Read current OpenLDAP TLS configuration
+  ansible.builtin.command:
+    cmd: >
+      ldapsearch -Y EXTERNAL -H ldapi:/// -LLL
+      -b cn=config
+      -s base
+      olcTLSCACertificateFile
+      olcTLSCertificateFile
+      olcTLSCertificateKeyFile
+  register: ldap_tls_current
+  changed_when: false
+
+- name: Create OpenLDAP TLS configuration LDIF
+  ansible.builtin.copy:
+    dest: /tmp/ldap-tls.ldif
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      dn: cn=config
+      changetype: modify
+      replace: olcTLSCACertificateFile
+      olcTLSCACertificateFile: {{ ldap_tls_ca_cert }}
+      -
+      replace: olcTLSCertificateFile
+      olcTLSCertificateFile: {{ ldap_tls_server_cert }}
+      -
+      replace: olcTLSCertificateKeyFile
+      olcTLSCertificateKeyFile: {{ ldap_tls_server_key }}
+  when:
+    - ldap_tls_ca_cert not in ldap_tls_current.stdout
+      or ldap_tls_server_cert not in ldap_tls_current.stdout
+      or ldap_tls_server_key not in ldap_tls_current.stdout
+
+- name: Apply OpenLDAP TLS configuration
+  ansible.builtin.command:
+    cmd: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/ldap-tls.ldif
+  when:
+    - ldap_tls_ca_cert not in ldap_tls_current.stdout
+      or ldap_tls_server_cert not in ldap_tls_current.stdout
+      or ldap_tls_server_key not in ldap_tls_current.stdout
+  notify: Restart slapd
+
+# ============================================================
+# Enable LDAP + LDAPS listeners
+# ============================================================
+
+- name: Configure slapd listeners
+  ansible.builtin.lineinfile:
+    path: /etc/default/slapd
+    regexp: '^SLAPD_SERVICES='
+    line: 'SLAPD_SERVICES="ldap:/// ldapi:/// ldaps:///"'
+  notify: Restart slapd

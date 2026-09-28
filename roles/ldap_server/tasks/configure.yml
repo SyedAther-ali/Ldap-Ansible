@@ -1,0 +1,37 @@
+---
+- name: Preconfigure LDAP domain
+  ansible.builtin.debconf:
+    name: slapd
+    question: slapd/domain
+    value: "{{ ldap_domain }}"
+    vtype: string
+
+- name: Preconfigure LDAP organization
+  ansible.builtin.debconf:
+    name: slapd
+    question: shared/organization
+    value: "{{ ldap_organization }}"
+    vtype: string
+
+- name: Preconfigure LDAP administrator password
+  ansible.builtin.debconf:
+    name: slapd
+    question: slapd/password1
+    value: "{{ ldap_admin_password }}"
+    vtype: password
+  no_log: true
+
+- name: Confirm LDAP administrator password
+  ansible.builtin.debconf:
+    name: slapd
+    question: slapd/password2
+    value: "{{ ldap_admin_password }}"
+    vtype: password
+  no_log: true
+
+- name: Configure slapd to use the supplied settings
+  ansible.builtin.debconf:
+    name: slapd
+    question: slapd/no_configuration
+    value: "false"
+    vtype: boolean

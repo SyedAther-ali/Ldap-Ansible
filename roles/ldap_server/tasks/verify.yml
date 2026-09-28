@@ -1,0 +1,97 @@
+---
+- name: Ensure LDAP service is running
+  ansible.builtin.service:
+    name: slapd
+    state: started
+    enabled: true
+
+- name: Check LDAP service status
+  ansible.builtin.command:
+    cmd: systemctl is-active slapd
+  register: ldap_service_status
+  changed_when: false
+
+- name: Verify LDAP service is active
+  ansible.builtin.assert:
+    that:
+      - ldap_service_status.stdout == "active"
+    fail_msg: "OpenLDAP service is not active."
+    success_msg: "OpenLDAP service is active."
+
+- name: Query LDAP directory
+  ansible.builtin.command:
+    cmd: >
+      ldapsearch -x -LLL
+      -H ldaps://ldap.example.internal:636
+      -o TLS_CACERT={{ ldap_tls_ca_cert }}
+      -D "{{ ldap_admin_dn }}"
+      -w "{{ ldap_admin_password }}"
+      -b "{{ ldap_base_dn }}"
+      "(objectClass=*)"
+      dn
+  register: ldap_directory_entries
+  changed_when: false
+  no_log: true
+
+- name: Verify LDAP base DN exists
+  ansible.builtin.assert:
+    that:
+      - ldap_base_dn in ldap_directory_entries.stdout
+    fail_msg: "LDAP base DN does not exist: {{ ldap_base_dn }}"
+    success_msg: "LDAP base DN exists."
+
+- name: Verify People OU exists
+  ansible.builtin.assert:
+    that:
+      - ('ou=People,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "People OU does not exist."
+    success_msg: "People OU exists."
+
+- name: Verify Groups OU exists
+  ansible.builtin.assert:
+    that:
+      - ('ou=Groups,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "Groups OU does not exist."
+    success_msg: "Groups OU exists."
+
+- name: Verify ServiceAccounts OU exists
+  ansible.builtin.assert:
+    that:
+      - ('ou=ServiceAccounts,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "ServiceAccounts OU does not exist."
+    success_msg: "ServiceAccounts OU exists."
+
+- name: Verify Alice exists
+  ansible.builtin.assert:
+    that:
+      - ('uid=alice,ou=People,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "LDAP user Alice does not exist."
+    success_msg: "LDAP user Alice exists."
+
+- name: Verify Bob exists
+  ansible.builtin.assert:
+    that:
+      - ('uid=bob,ou=People,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "LDAP user Bob does not exist."
+    success_msg: "LDAP user Bob exists."
+
+- name: Verify developers group exists
+  ansible.builtin.assert:
+    that:
+      - ('cn=developers,ou=Groups,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "Developers group does not exist."
+    success_msg: "Developers group exists."
+
+- name: Verify admins group exists
+  ansible.builtin.assert:
+    that:
+      - ('cn=admins,ou=Groups,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "Admins group does not exist."
+    success_msg: "Admins group exists."
+
+- name: Verify Django service account exists
+  ansible.builtin.assert:
+    that:
+      - ('cn=django-bind,ou=ServiceAccounts,' ~ ldap_base_dn) in ldap_directory_entries.stdout
+    fail_msg: "Django service account does not exist."
+    success_msg: "Django service account exists."

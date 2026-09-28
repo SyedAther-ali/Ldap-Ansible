@@ -1,0 +1,19 @@
+---
+ldap_domain: "ldap.example.internal"
+ldap_base_dn: "dc=ldap,dc=example,dc=internal"
+ldap_organization: "LDAP Example Organization"
+ldap_admin_dn: "cn=admin,dc=ldap,dc=example,dc=internal"
+
+ldap_tls_dir: "/etc/ldap/tls"
+
+ldap_tls_ca_key: "{{ ldap_tls_dir }}/ca.key"
+ldap_tls_ca_cert: "{{ ldap_tls_dir }}/ca.crt"
+
+ldap_tls_server_key: "{{ ldap_tls_dir }}/ldap-server.key"
+ldap_tls_server_csr: "{{ ldap_tls_dir }}/ldap-server.csr"
+ldap_tls_server_cert: "{{ ldap_tls_dir }}/ldap-server.crt"
+
+ldap_tls_common_name: "ldap.example.internal"
+ldap_tls_subject_alt_names:
+  - "DNS:ldap.example.internal"
+  - "DNS:ldap01"

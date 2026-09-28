@@ -1,0 +1,42 @@
+---
+- name: Install LDAP deployment prerequisites
+  ansible.builtin.apt:
+    name:
+      - debconf-utils
+    state: present
+    update_cache: true
+
+- name: Configure LDAP installation parameters
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Install LDAP packages
+  ansible.builtin.import_tasks: install.yml
+
+- name: Ensure LDAP service is running before TLS configuration
+  ansible.builtin.service:
+    name: slapd
+    state: started
+
+- name: Configure LDAP TLS
+  ansible.builtin.import_tasks: tls.yml
+
+- name: Apply LDAP service changes before continuing
+  ansible.builtin.meta: flush_handlers
+
+- name: Configure LDAP directory structure
+  ansible.builtin.import_tasks: directory.yml
+
+- name: Create LDAP users
+  ansible.builtin.import_tasks: users.yml
+
+- name: Create LDAP groups
+  ansible.builtin.import_tasks: groups.yml
+
+- name: Configure LDAP group membership
+  ansible.builtin.import_tasks: membership.yml
+
+- name: Create LDAP service account
+  ansible.builtin.import_tasks: service_account.yml
+
+- name: Verify LDAP server
+  ansible.builtin.import_tasks: verify.yml

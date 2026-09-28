@@ -1,0 +1,30 @@
+---
+- name: Add Alice to developers
+  community.general.ldap_attrs:
+    dn: "cn=developers,ou=Groups,{{ ldap_base_dn }}"
+    attributes:
+      memberUid: alice
+    state: present
+    server_uri: "ldap://127.0.0.1"
+    bind_dn: "{{ ldap_admin_dn }}"
+    bind_pw: "{{ ldap_admin_password }}"
+
+- name: Add Bob to developers
+  community.general.ldap_attrs:
+    dn: "cn=developers,ou=Groups,{{ ldap_base_dn }}"
+    attributes:
+      memberUid: bob
+    state: present
+    server_uri: "ldap://127.0.0.1"
+    bind_dn: "{{ ldap_admin_dn }}"
+    bind_pw: "{{ ldap_admin_password }}"
+
+- name: Add Alice to admins
+  community.general.ldap_attrs:
+    dn: "cn=admins,ou=Groups,{{ ldap_base_dn }}"
+    attributes:
+      memberUid: alice
+    state: present
+    server_uri: "ldap://127.0.0.1"
+    bind_dn: "{{ ldap_admin_dn }}"
+    bind_pw: "{{ ldap_admin_password }}"

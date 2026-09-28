@@ -1,0 +1,3 @@
+[ldap_servers]
+ldap01 ansible_host=10.9.98.103
+ldap02 ansible_host=10.9.99.92

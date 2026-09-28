@@ -1,0 +1,32 @@
+---
+- name: Generate password hash for LDAP users
+  ansible.builtin.command:
+    cmd: "slappasswd -h {SSHA} -s '{{ item.password }}'"
+  loop: "{{ ldap_users }}"
+  register: ldap_user_password_hashes
+  no_log: true
+  changed_when: false
+
+- name: Create LDAP users
+  community.general.ldap_entry:
+    dn: "uid={{ item.item.username }},ou=People,{{ ldap_base_dn }}"
+    objectClass:
+      - inetOrgPerson
+      - posixAccount
+      - shadowAccount
+    attributes:
+      uid: "{{ item.item.username }}"
+      cn: "{{ item.item.first_name }} {{ item.item.last_name }}"
+      sn: "{{ item.item.last_name }}"
+      givenName: "{{ item.item.first_name }}"
+      uidNumber: "{{ item.item.uid_number }}"
+      gidNumber: "{{ item.item.gid_number }}"
+      homeDirectory: "/home/{{ item.item.username }}"
+      loginShell: "/bin/bash"
+      userPassword: "{{ item.stdout }}"
+    server_uri: "ldap://127.0.0.1"
+    bind_dn: "{{ ldap_admin_dn }}"
+    bind_pw: "{{ ldap_admin_password }}"
+  loop: "{{ ldap_user_password_hashes.results }}"
+  no_log: true
+

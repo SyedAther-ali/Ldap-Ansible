@@ -1,0 +1,12 @@
+---
+- name: Install OpenLDAP packages
+  ansible.builtin.apt:
+    name:
+      - slapd
+      - ldap-utils
+      - openssl
+      - python3-ldap
+      - python3-cryptography
+    state: present
+    update_cache: true
+

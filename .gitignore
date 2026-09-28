@@ -1,0 +1,37 @@
+# Ansible temporary files
+*.retry
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.venv/
+
+# Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*.p12
+*.pfx
+
+# TLS certificates generated locally
+*.csr
+
+
+# Secrets / local files
+.env
+*.key
+*.pem
+
+# Unencrypted Vault backups
+vault-password.txt

@@ -1,0 +1,22 @@
+---
+- name: Create People organizational unit
+  community.general.ldap_entry:
+    dn: "ou=People,{{ ldap_base_dn }}"
+    objectClass:
+      - organizationalUnit
+    attributes:
+      ou: People
+    server_uri: "ldap://127.0.0.1"
+    bind_dn: "{{ ldap_admin_dn }}"
+    bind_pw: "{{ ldap_admin_password }}"
+
+- name: Create Groups organizational unit
+  community.general.ldap_entry:
+    dn: "ou=Groups,{{ ldap_base_dn }}"
+    objectClass:
+      - organizationalUnit
+    attributes:
+      ou: Groups
+    server_uri: "ldap://127.0.0.1"
+    bind_dn: "{{ ldap_admin_dn }}"
+    bind_pw: "{{ ldap_admin_password }}"

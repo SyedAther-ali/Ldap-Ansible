@@ -354,5 +354,5 @@ The main objective is not only to deploy LDAP, but to understand how manual infr
 
 Syed
 
-Cybersecurity / SOC Intern
+Cybersecurity SOC Intern
 IIT Hyderabad
